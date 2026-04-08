@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { forwardRef, useLayoutEffect, useRef, useState } from "react";
 
 /** Logical mobile viewport width (CSS px) — iframe is scaled down to fit the column. */
 const MOBILE_W = 390;
@@ -10,7 +10,10 @@ const MOBILE_H = 820;
  * Live preview that scales the iframe like `object-fit: contain`: the full
  * logical mobile width stays visible without horizontal clipping.
  */
-export function MobileLiveIframe({ src, title }: { src: string; title: string }) {
+export const MobileLiveIframe = forwardRef<
+  HTMLIFrameElement,
+  { src: string; title: string }
+>(function MobileLiveIframe({ src, title }, ref) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
 
@@ -43,6 +46,7 @@ export function MobileLiveIframe({ src, title }: { src: string; title: string })
         style={{ width: boxW, height: boxH }}
       >
         <iframe
+          ref={ref}
           src={src}
           title={title}
           className="block border-0"
@@ -56,4 +60,4 @@ export function MobileLiveIframe({ src, title }: { src: string; title: string })
       </div>
     </div>
   );
-}
+});

@@ -1,12 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { RefObject } from "react";
 import { DesktopLiveIframe } from "@/components/DesktopLiveIframe";
 import { MobileLiveIframe } from "@/components/MobileLiveIframe";
 import { ScreenshotPanel } from "@/components/ScreenshotPanel";
 
 type ViewportMode = "desktop" | "mobile";
 type ColumnPreview = "live" | "snapshot";
+
+export type ScrollToRatioRequest = {
+  /** Bumps when the user picks another band so effects re-run. */
+  id: number;
+  /** 0–1 scroll fraction for Current column (aligned band start vs full PNG height). */
+  currentRatio: number;
+  /** 0–1 scroll fraction for New column. */
+  newRatio: number;
+};
 
 function SegmentedLiveSnapshot({
   value,
@@ -50,6 +60,22 @@ function SegmentedLiveSnapshot({
   );
 }
 
+function scrollIframeToRatio(iframe: HTMLIFrameElement | null, ratio: number) {
+  if (!iframe) return;
+  try {
+    const win = iframe.contentWindow;
+    if (!win) return;
+    const doc = win.document.documentElement;
+    const h = Math.max(0, doc.scrollHeight - win.innerHeight);
+    win.scrollTo({
+      top: ratio * h,
+      behavior: "smooth",
+    });
+  } catch {
+    /* cross-origin */
+  }
+}
+
 export function ReviewLiveSplit({
   viewportMode,
   currentUrl,
@@ -59,6 +85,7 @@ export function ReviewLiveSplit({
   screenshotAltCurrent,
   screenshotAltNew,
   onOpenLightbox,
+  scrollToRatioRequest,
 }: {
   viewportMode: ViewportMode;
   currentUrl: string;
@@ -68,8 +95,53 @@ export function ReviewLiveSplit({
   screenshotAltCurrent: string;
   screenshotAltNew: string;
   onOpenLightbox: (index: 0 | 1) => void;
+  /** When set, scroll both preview columns to this vertical position (snapshot + live). */
+  scrollToRatioRequest?: ScrollToRatioRequest | null;
 }) {
   const [previewMode, setPreviewMode] = useState<ColumnPreview>("snapshot");
+
+  const currentSnapshotScrollRef = useRef<HTMLDivElement>(null);
+  const newSnapshotScrollRef = useRef<HTMLDivElement>(null);
+  const currentLiveIframeRef = useRef<HTMLIFrameElement>(null);
+  const newLiveIframeRef = useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    if (!scrollToRatioRequest) return;
+    const rc = Math.min(1, Math.max(0, scrollToRatioRequest.currentRatio));
+    const rn = Math.min(1, Math.max(0, scrollToRatioRequest.newRatio));
+
+    function scrollSnapshotEl(
+      el: HTMLDivElement | null,
+      r: number,
+      behavior: ScrollBehavior,
+    ) {
+      if (!el) return;
+      const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight);
+      el.scrollTo({ top: r * maxScroll, behavior });
+    }
+
+    function applyScroll(behavior: ScrollBehavior) {
+      scrollSnapshotEl(currentSnapshotScrollRef.current, rc, behavior);
+      scrollSnapshotEl(newSnapshotScrollRef.current, rn, behavior);
+      scrollIframeToRatio(currentLiveIframeRef.current, rc);
+      scrollIframeToRatio(newLiveIframeRef.current, rn);
+    }
+
+    applyScroll("smooth");
+    requestAnimationFrame(() => applyScroll("smooth"));
+
+    const els = [
+      currentSnapshotScrollRef.current,
+      newSnapshotScrollRef.current,
+    ].filter((x): x is HTMLDivElement => x != null);
+
+    const ro = new ResizeObserver(() => {
+      applyScroll("auto");
+    });
+    for (const el of els) ro.observe(el);
+
+    return () => ro.disconnect();
+  }, [scrollToRatioRequest]);
 
   const mobileChrome = viewportMode === "mobile";
   const segmentedAriaBoth =
@@ -88,6 +160,8 @@ export function ReviewLiveSplit({
           snapshotAlt={screenshotAltCurrent}
           onSnapshotClick={() => onOpenLightbox(0)}
           segmentedAria={segmentedAriaBoth}
+          snapshotScrollRef={currentSnapshotScrollRef}
+          liveIframeRef={currentLiveIframeRef}
         />
         <PreviewColumn
           label="New"
@@ -99,6 +173,8 @@ export function ReviewLiveSplit({
           snapshotAlt={screenshotAltNew}
           onSnapshotClick={() => onOpenLightbox(1)}
           segmentedAria={segmentedAriaBoth}
+          snapshotScrollRef={newSnapshotScrollRef}
+          liveIframeRef={newLiveIframeRef}
         />
       </div>
       <p className="text-[11px] leading-snug text-zinc-500 dark:text-zinc-400">
@@ -108,7 +184,8 @@ export function ReviewLiveSplit({
         <span className="font-medium text-zinc-600 dark:text-zinc-300">
           Snapshot
         </span>{" "}
-        or open the link in a new tab.
+        or open the link in a new tab. Choosing a band scrolls both columns;
+        live scroll works only when the page allows same-origin access.
       </p>
     </div>
   );
@@ -124,6 +201,8 @@ function PreviewColumn({
   snapshotAlt,
   onSnapshotClick,
   segmentedAria,
+  snapshotScrollRef,
+  liveIframeRef,
 }: {
   label: string;
   pageUrl: string;
@@ -134,6 +213,8 @@ function PreviewColumn({
   snapshotAlt: string;
   onSnapshotClick: () => void;
   segmentedAria: string;
+  snapshotScrollRef: RefObject<HTMLDivElement | null>;
+  liveIframeRef: RefObject<HTMLIFrameElement | null>;
 }) {
   return (
     <div className="flex min-h-[50vh] flex-1 flex-col gap-2 md:min-h-0">
@@ -175,12 +256,20 @@ function PreviewColumn({
         >
           {preview === "live" ? (
             mobileChrome ? (
-              <MobileLiveIframe src={pageUrl} title={`${label} live preview`} />
+              <MobileLiveIframe
+                ref={liveIframeRef}
+                src={pageUrl}
+                title={`${label} live preview`}
+              />
             ) : (
-              <DesktopLiveIframe src={pageUrl} title={`${label} live preview`} />
+              <DesktopLiveIframe
+                ref={liveIframeRef}
+                src={pageUrl}
+                title={`${label} live preview`}
+              />
             )
           ) : (
-            <div className="flex min-h-0 flex-1 flex-col overflow-auto">
+            <div className="flex min-h-0 flex-1 flex-col">
               <ScreenshotPanel
                 label={label}
                 src={snapshotSrc}
@@ -188,6 +277,8 @@ function PreviewColumn({
                 onImageClick={onSnapshotClick}
                 showLabel={false}
                 fitContained={mobileChrome}
+                scrollContainerRef={snapshotScrollRef}
+                fullPageScroll
               />
             </div>
           )}

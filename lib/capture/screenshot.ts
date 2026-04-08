@@ -1,7 +1,10 @@
 import type { Browser, Page } from "playwright";
 import { extractPageData } from "@/lib/extract/extractPageData";
 import type { PageData } from "@/lib/types/comparison";
-import { hideHostPlatformOverlays } from "@/lib/capture/hideHostOverlays";
+import {
+  hideHostPlatformOverlays,
+  normalizePageForDeterministicCapture,
+} from "@/lib/capture/hideHostOverlays";
 import { DEFAULT_USER_AGENT } from "./playwright";
 
 export const VIEWPORT_DESKTOP = { width: 1440, height: 900 };
@@ -99,6 +102,24 @@ async function waitForCaptureReady(
     .catch(() => {});
 }
 
+async function preScrollForLazyContent(page: Page): Promise<void> {
+  await page
+    .evaluate(async () => {
+      const max = Math.max(
+        document.body?.scrollHeight ?? 0,
+        document.documentElement?.scrollHeight ?? 0,
+      );
+      const step = Math.max(400, Math.floor(window.innerHeight * 0.75));
+      for (let y = 0; y < max; y += step) {
+        window.scrollTo(0, y);
+        await new Promise((resolve) => window.setTimeout(resolve, 90));
+      }
+      window.scrollTo(0, 0);
+      await new Promise((resolve) => window.setTimeout(resolve, 120));
+    })
+    .catch(() => {});
+}
+
 export type CaptureResult = {
   desktopPng: Buffer;
   mobilePng: Buffer;
@@ -129,18 +150,22 @@ export async function captureSite(
       imageBudgetMs: 18_000,
       settleMs: settleMsDesktop,
     });
+    await normalizePageForDeterministicCapture(page);
     await hideHostPlatformOverlays(page);
+    await preScrollForLazyContent(page);
     await delay(150);
-    const desktopPng = await page.screenshot({ type: "png", fullPage: false });
+    const desktopPng = await page.screenshot({ type: "png", fullPage: true });
     const pageData = await extractPageData(page);
     await page.setViewportSize(VIEWPORT_MOBILE);
     await waitForCaptureReady(page, {
       imageBudgetMs: 14_000,
       settleMs: settleMsMobile,
     });
+    await normalizePageForDeterministicCapture(page);
     await hideHostPlatformOverlays(page);
+    await preScrollForLazyContent(page);
     await delay(150);
-    const mobilePng = await page.screenshot({ type: "png", fullPage: false });
+    const mobilePng = await page.screenshot({ type: "png", fullPage: true });
     return { desktopPng, mobilePng, pageData };
   } finally {
     await context.close();

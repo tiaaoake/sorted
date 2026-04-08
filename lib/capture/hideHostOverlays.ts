@@ -73,3 +73,64 @@ export async function hideHostPlatformOverlays(page: Page): Promise<void> {
       /* ignore */
     });
 }
+
+/** Best-effort deterministic capture prep to reduce diff noise. */
+export async function normalizePageForDeterministicCapture(
+  page: Page,
+): Promise<void> {
+  await page
+    .evaluate(() => {
+      const styleTagId = "sorted-capture-deterministic-style";
+      if (!document.getElementById(styleTagId)) {
+        const style = document.createElement("style");
+        style.id = styleTagId;
+        style.textContent = `
+          *, *::before, *::after {
+            animation: none !important;
+            transition: none !important;
+            caret-color: transparent !important;
+          }
+          video, audio {
+            animation: none !important;
+          }
+        `;
+        document.documentElement.appendChild(style);
+      }
+
+      document.querySelectorAll("video, audio").forEach((el) => {
+        if (!(el instanceof HTMLMediaElement)) return;
+        try {
+          el.pause();
+          el.currentTime = 0;
+        } catch {
+          /* ignore */
+        }
+      });
+
+      const overlaySelectors = [
+        '[id*="cookie" i]',
+        '[class*="cookie" i]',
+        '[id*="consent" i]',
+        '[class*="consent" i]',
+        '[id*="chat" i]',
+        '[class*="chat" i]',
+        '[class*="intercom" i]',
+        '[class*="hubspot" i]',
+      ];
+
+      for (const sel of overlaySelectors) {
+        document.querySelectorAll(sel).forEach((el) => {
+          if (!(el instanceof HTMLElement)) return;
+          const st = window.getComputedStyle(el);
+          if (st.position !== "fixed" && st.position !== "sticky") return;
+          el.style.setProperty("display", "none", "important");
+          el.style.setProperty("visibility", "hidden", "important");
+          el.style.setProperty("opacity", "0", "important");
+          el.style.setProperty("pointer-events", "none", "important");
+        });
+      }
+    })
+    .catch(() => {
+      /* ignore */
+    });
+}

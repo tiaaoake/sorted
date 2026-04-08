@@ -6,6 +6,7 @@ import { captureSite } from "@/lib/capture/screenshot";
 import { buildFindings } from "@/lib/compare/buildFindings";
 import { computePassScore } from "@/lib/compare/computePassScore";
 import { createPromptService } from "@/lib/prompt/promptService";
+import { buildVisualDiffGuideFromBuffers } from "@/lib/review/visualDiffMap";
 import { saveRun } from "@/lib/storage/saveRun";
 import { setSiteLatest } from "@/lib/storage/siteLatest";
 import { validateComparisonUrls } from "@/lib/validateUrl";
@@ -48,6 +49,15 @@ export async function runComparison(formData: FormData): Promise<CompareResult> 
     const id = crypto.randomUUID();
     const createdAt = new Date().toISOString();
 
+    const desktopDiff = await buildVisualDiffGuideFromBuffers(
+      current.desktopPng,
+      next.desktopPng,
+    );
+    const mobileDiff = await buildVisualDiffGuideFromBuffers(
+      current.mobilePng,
+      next.mobilePng,
+    );
+
     await saveRun(
       {
         id,
@@ -59,6 +69,10 @@ export async function runComparison(formData: FormData): Promise<CompareResult> 
         findings,
         generatedPrompt,
         userPromptAppend: "",
+        visualDiffGuide: {
+          ...(desktopDiff ? { desktop: desktopDiff } : {}),
+          ...(mobileDiff ? { mobile: mobileDiff } : {}),
+        },
         ...(siteKey ? { siteKey } : {}),
       },
       {

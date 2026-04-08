@@ -2,14 +2,17 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ComparisonRun } from "@/lib/types/comparison";
 import { DraftEmailImageSidebar } from "@/components/DraftEmailImageSidebar";
 import { DraftEmailPanel } from "@/components/DraftEmailPanel";
 import { DifferencesPanel } from "@/components/DifferencesPanel";
 import { PreviewLightbox } from "@/components/PreviewLightbox";
 import type { PreviewSlide } from "@/components/PreviewLightbox";
-import { ReviewLiveSplit } from "@/components/ReviewLiveSplit";
+import {
+  ReviewLiveSplit,
+  type ScrollToRatioRequest,
+} from "@/components/ReviewLiveSplit";
 import { ReviewSiteFeedback } from "@/components/ReviewSiteFeedback";
 import { SidebarScore } from "@/components/SidebarScore";
 import { ViewToggle } from "@/components/ViewToggle";
@@ -59,6 +62,25 @@ export default function ReviewClient({
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [lightboxMode, setLightboxMode] = useState<LightboxMode>("compare");
+  const [desktopReviewed, setDesktopReviewed] = useState(false);
+  const [mobileReviewed, setMobileReviewed] = useState(false);
+  const [reviewSaved, setReviewSaved] = useState(false);
+
+  const scrollBandReqIdRef = useRef(0);
+  const [scrollToRatioRequest, setScrollToRatioRequest] =
+    useState<ScrollToRatioRequest | null>(null);
+
+  function handleBandScrollToRatios(ratios: {
+    currentRatio: number;
+    newRatio: number;
+  }) {
+    scrollBandReqIdRef.current += 1;
+    setScrollToRatioRequest({
+      id: scrollBandReqIdRef.current,
+      currentRatio: ratios.currentRatio,
+      newRatio: ratios.newRatio,
+    });
+  }
 
   const currentSrc =
     mode === "desktop"
@@ -186,6 +208,19 @@ export default function ReviewClient({
       if (e.key.toLowerCase() === "v") {
         e.preventDefault();
         setMode((prev) => (prev === "desktop" ? "mobile" : "desktop"));
+        return;
+      }
+      if (e.shiftKey && e.key.toLowerCase() === "d") {
+        e.preventDefault();
+        setMode("desktop");
+        setDesktopReviewed(true);
+        return;
+      }
+      if (e.shiftKey && e.key.toLowerCase() === "m") {
+        e.preventDefault();
+        setMode("mobile");
+        setMobileReviewed(true);
+        return;
       }
     }
 
@@ -289,7 +324,8 @@ export default function ReviewClient({
             Last capture {lastCaptureLabel}
           </span>
           <span className="text-zinc-500 dark:text-zinc-400">
-            Shortcuts: Alt+Left/Right or [ / ] for prev/next, L live, E email, V viewport
+            Shortcuts: Alt+Left/Right or [ / ] for prev/next, L live, E email,
+            V viewport, Shift+D/M mark desktop/mobile, J/K diff sections
           </span>
         </div>
         <div
@@ -331,6 +367,7 @@ export default function ReviewClient({
                 screenshotAltCurrent={`Current site ${mode} screenshot`}
                 screenshotAltNew={`New site ${mode} screenshot`}
                 onOpenLightbox={openLightboxCompare}
+                scrollToRatioRequest={scrollToRatioRequest}
               />
             ) : (
               <DraftEmailPanel run={run} />
@@ -385,6 +422,22 @@ export default function ReviewClient({
                       runId={run.id}
                       siteLatestRunId={siteLatestRunId}
                       initialEntry={initialSiteReview}
+                      currentUrl={run.currentUrl}
+                      newUrl={run.newUrl}
+                      projectLabel={currentProjectLabel}
+                      desktopGuide={run.visualDiffGuide?.desktop}
+                      mobileGuide={run.visualDiffGuide?.mobile}
+                      findings={run.findings}
+                      activeMode={mode}
+                      onMarkDesktopDone={() => setDesktopReviewed(true)}
+                      onMarkMobileDone={() => setMobileReviewed(true)}
+                      desktopReviewed={desktopReviewed}
+                      mobileReviewed={mobileReviewed}
+                      reviewSaved={reviewSaved}
+                      onDesktopReviewedMark={() => setDesktopReviewed(true)}
+                      onMobileReviewedMark={() => setMobileReviewed(true)}
+                      onReviewSavedMark={setReviewSaved}
+                      onBandScrollToRatios={handleBandScrollToRatios}
                     />
                     <DifferencesPanel
                       compact
