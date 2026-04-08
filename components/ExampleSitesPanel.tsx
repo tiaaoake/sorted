@@ -131,19 +131,23 @@ export function ExampleSitesPanel({
         </p>
       ) : null}
       <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
-        <table className="w-full min-w-[860px] table-fixed text-left text-[11px] leading-tight text-zinc-900 dark:text-zinc-100">
+        <table className="w-full table-fixed text-left text-[11px] leading-tight text-zinc-900 dark:text-zinc-100">
           <colgroup>
-            <col className="w-16" />
-            <col className="min-w-[7rem]" />
-            <col className="w-[8.75rem]" />
-            <col className="w-[8.75rem]" />
-            <col className="w-[5.25rem]" />
-            <col className="w-[2.75rem]" />
-            <col className="w-[5.5rem]" />
-            <col />
+            <col className="w-7" />
+            <col className="w-14" />
+            <col className="w-[11rem]" />
+            <col className="w-[8rem]" />
+            <col className="w-[8rem]" />
+            <col className="w-[2.5rem]" />
+            <col className="w-[4.75rem]" />
+            <col className="w-[11rem]" />
+            <col className="w-[5rem]" />
           </colgroup>
           <thead>
             <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/80">
+              <th className="whitespace-nowrap px-1 py-1 text-right text-[10px] font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">
+                #
+              </th>
               <th className="whitespace-nowrap px-1.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">
                 Preview
               </th>
@@ -157,9 +161,6 @@ export function ExampleSitesPanel({
                 New
               </th>
               <th className="whitespace-nowrap px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">
-                Last capture
-              </th>
-              <th className="whitespace-nowrap px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">
                 Score
               </th>
               <th className="px-1.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">
@@ -168,10 +169,13 @@ export function ExampleSitesPanel({
               <th className="px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">
                 Actions
               </th>
+              <th className="whitespace-nowrap px-1.5 py-1 text-right text-[10px] font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-400">
+                Last capture
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-            {pairs.map((pair) => {
+            {pairs.map((pair, idx) => {
               const entry = latest[pair.id];
               const loading = busyIds.has(pair.id);
               const rev = siteReview[pair.id];
@@ -179,8 +183,11 @@ export function ExampleSitesPanel({
               return (
                 <tr
                   key={pair.id}
-                  className="bg-white dark:bg-zinc-950/40"
+                  className="bg-white transition-colors hover:bg-zinc-50/70 dark:bg-zinc-950/40 dark:hover:bg-zinc-900/30"
                 >
+                  <td className="whitespace-nowrap px-1 py-1 text-right tabular-nums text-zinc-400 dark:text-zinc-500">
+                    {idx + 1}
+                  </td>
                   <td className="w-16 min-w-16 px-1.5 py-1 align-middle">
                     <div className="flex justify-center">
                       <SitePreviewThumbnail
@@ -228,15 +235,6 @@ export function ExampleSitesPanel({
                       </span>
                     )}
                   </td>
-                  <td className="whitespace-nowrap px-1.5 py-1 text-right text-zinc-500 dark:text-zinc-400">
-                    {entry ? (
-                      <time dateTime={entry.updatedAt} title={entry.updatedAt}>
-                        {formatAgo(entry.updatedAt)}
-                      </time>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
                   <td className="whitespace-nowrap px-1.5 py-1 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
                     {entry?.score !== undefined ? (
                       <span title="Heuristic pass score (0–100)">{entry.score}</span>
@@ -253,15 +251,22 @@ export function ExampleSitesPanel({
                     </span>
                   </td>
                   <td className="px-1.5 py-1">
-                    <div className="flex flex-nowrap items-center justify-end gap-1">
+                    <div className="flex flex-nowrap items-center justify-center gap-1">
                       {entry ? (
                         <Link
                           href={`/review/${entry.runId}`}
-                          className="rounded border border-zinc-300 bg-white px-1.5 py-0.5 text-[10px] font-medium text-zinc-800 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                          className="inline-flex w-24 items-center justify-center rounded border border-zinc-300 bg-white px-1.5 py-0.5 text-[10px] font-medium text-zinc-800 transition-colors hover:border-zinc-400 hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-500 dark:hover:bg-zinc-800"
                         >
                           Open review
                         </Link>
-                      ) : null}
+                      ) : (
+                        <span
+                          aria-disabled
+                          className="inline-flex w-24 cursor-not-allowed items-center justify-center rounded border border-zinc-200 bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-500"
+                        >
+                          Open review
+                        </span>
+                      )}
                       <button
                         type="button"
                         disabled={loading || !pair.newUrl}
@@ -271,7 +276,7 @@ export function ExampleSitesPanel({
                             : "Add a new (Lovable) URL to enable compare"
                         }
                         onClick={() => runPair(pair)}
-                        className="rounded bg-zinc-900 px-1.5 py-0.5 text-[10px] font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+                        className="inline-flex w-24 cursor-pointer items-center justify-center rounded bg-zinc-900 px-1.5 py-0.5 text-[10px] font-medium text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-600 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white dark:disabled:bg-zinc-700 dark:disabled:text-zinc-400"
                       >
                         {loading
                           ? "Capturing…"
@@ -282,6 +287,15 @@ export function ExampleSitesPanel({
                               : "Compare"}
                       </button>
                     </div>
+                  </td>
+                  <td className="whitespace-nowrap px-1.5 py-1 text-right text-zinc-500 dark:text-zinc-400">
+                    {entry ? (
+                      <time dateTime={entry.updatedAt} title={entry.updatedAt}>
+                        {formatAgo(entry.updatedAt)}
+                      </time>
+                    ) : (
+                      "—"
+                    )}
                   </td>
                 </tr>
               );

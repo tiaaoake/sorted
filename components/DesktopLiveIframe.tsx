@@ -4,7 +4,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 
 /** Fixed “real desktop” viewport width — iframe is scaled down to fit the pane. */
 const DESKTOP_W = 1500;
-const DESKTOP_H = 900;
+const DESKTOP_H = 1400;
 
 /**
  * Live preview at a fixed desktop width (not a fluid responsive column).

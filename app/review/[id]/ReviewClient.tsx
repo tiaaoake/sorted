@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import type { ComparisonRun } from "@/lib/types/comparison";
 import { DraftEmailImageSidebar } from "@/components/DraftEmailImageSidebar";
 import { DraftEmailPanel } from "@/components/DraftEmailPanel";
@@ -11,6 +13,7 @@ import { ReviewLiveSplit } from "@/components/ReviewLiveSplit";
 import { ReviewSiteFeedback } from "@/components/ReviewSiteFeedback";
 import { SidebarScore } from "@/components/SidebarScore";
 import { ViewToggle } from "@/components/ViewToggle";
+import { reviewStatusUiLabel } from "@/lib/reviewLabels";
 import type { SiteReviewEntry } from "@/lib/storage/siteReview";
 
 type ViewMode = "desktop" | "mobile";
@@ -23,13 +26,32 @@ export default function ReviewClient({
   reviewStorageKey,
   initialSiteReview,
   siteLatestRunId,
+  currentProjectLabel,
+  currentProjectIndex,
+  totalProjects,
+  lastCaptureAt,
+  latestScore,
+  prevProjectLabel,
+  prevRunId,
+  nextProjectLabel,
+  nextRunId,
 }: {
   run: ComparisonRun;
   /** Map key for site review (Projects id, inferred row, or run id). */
   reviewStorageKey: string;
   initialSiteReview: SiteReviewEntry | undefined;
   siteLatestRunId: string | undefined;
+  currentProjectLabel?: string;
+  currentProjectIndex?: number;
+  totalProjects: number;
+  lastCaptureAt?: string;
+  latestScore: number;
+  prevProjectLabel?: string;
+  prevRunId?: string;
+  nextProjectLabel?: string;
+  nextRunId?: string;
 }) {
+  const router = useRouter();
   const [mode, setMode] = useState<ViewMode>("desktop");
   const [reviewTab, setReviewTab] = useState<ReviewTab>("live");
   const [liveSidebarTab, setLiveSidebarTab] =
@@ -97,6 +119,80 @@ export default function ReviewClient({
   const lightboxSlides =
     lightboxMode === "compare" ? compareSlides : draftEmailSlides;
 
+  const isStatusStale =
+    initialSiteReview?.reviewedRunId != null &&
+    initialSiteReview.reviewedRunId !== siteLatestRunId;
+  const status: "empty" | "passed" | "failed" = isStatusStale
+    ? "empty"
+    : (initialSiteReview?.status ?? "empty");
+  const lastCaptureLabel = lastCaptureAt
+    ? new Date(lastCaptureAt).toLocaleString()
+    : "-";
+  const statusBadgeClass =
+    status === "passed"
+      ? "bg-emerald-100 text-emerald-950 dark:bg-emerald-950/40 dark:text-emerald-100"
+      : status === "failed"
+        ? "bg-red-100 text-red-950 dark:bg-red-950/40 dark:text-red-100"
+        : "bg-amber-100 text-amber-950 dark:bg-amber-950/50 dark:text-amber-100";
+
+  useEffect(() => {
+    function isTypingTarget(el: EventTarget | null): boolean {
+      if (!(el instanceof HTMLElement)) return false;
+      const tag = el.tagName.toLowerCase();
+      return (
+        tag === "input" ||
+        tag === "textarea" ||
+        tag === "select" ||
+        el.isContentEditable
+      );
+    }
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (isTypingTarget(e.target)) return;
+      if (e.altKey && e.key === "ArrowLeft" && prevRunId) {
+        e.preventDefault();
+        router.push(`/review/${prevRunId}`);
+        return;
+      }
+      if (e.altKey && e.key === "ArrowRight" && nextRunId) {
+        e.preventDefault();
+        router.push(`/review/${nextRunId}`);
+        return;
+      }
+      if (e.key === "[") {
+        if (prevRunId) {
+          e.preventDefault();
+          router.push(`/review/${prevRunId}`);
+        }
+        return;
+      }
+      if (e.key === "]") {
+        if (nextRunId) {
+          e.preventDefault();
+          router.push(`/review/${nextRunId}`);
+        }
+        return;
+      }
+      if (e.key.toLowerCase() === "l") {
+        e.preventDefault();
+        setReviewTab("live");
+        return;
+      }
+      if (e.key.toLowerCase() === "e") {
+        e.preventDefault();
+        setReviewTab("draftEmail");
+        return;
+      }
+      if (e.key.toLowerCase() === "v") {
+        e.preventDefault();
+        setMode((prev) => (prev === "desktop" ? "mobile" : "desktop"));
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [nextRunId, prevRunId, router]);
+
   function openLightboxCompare(index: 0 | 1) {
     setLightboxMode("compare");
     setLightboxIndex(index);
@@ -132,9 +228,70 @@ export default function ReviewClient({
         onIndexChange={setLightboxIndex}
       />
       <header className="shrink-0 space-y-3 border-b border-zinc-200 pb-3 dark:border-zinc-800">
-        <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-          Review comparison
-        </h1>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="space-y-1">
+            <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+              {currentProjectLabel ? `${currentProjectLabel} review` : "Review comparison"}
+            </h1>
+            {currentProjectIndex ? (
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                Project {currentProjectIndex} of {totalProjects}
+              </p>
+            ) : (
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                Custom comparison run
+              </p>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Link
+              href={prevRunId ? `/review/${prevRunId}` : "#"}
+              aria-disabled={!prevRunId}
+              title={prevProjectLabel ? `Previous: ${prevProjectLabel}` : "No previous project"}
+              className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium transition ${
+                prevRunId
+                  ? "cursor-pointer border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                  : "cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
+              }`}
+              onClick={(e) => {
+                if (!prevRunId) e.preventDefault();
+              }}
+            >
+              Prev
+            </Link>
+            <Link
+              href={nextRunId ? `/review/${nextRunId}` : "#"}
+              aria-disabled={!nextRunId}
+              title={nextProjectLabel ? `Next: ${nextProjectLabel}` : "No next project"}
+              className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium transition ${
+                nextRunId
+                  ? "cursor-pointer border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                  : "cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500"
+              }`}
+              onClick={(e) => {
+                if (!nextRunId) e.preventDefault();
+              }}
+            >
+              Next
+            </Link>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="rounded-full bg-zinc-100 px-2 py-0.5 font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+            Score {latestScore}
+          </span>
+          <span
+            className={`rounded-full px-2 py-0.5 font-medium ${statusBadgeClass}`}
+          >
+            {reviewStatusUiLabel[status]}
+          </span>
+          <span className="rounded-full bg-zinc-100 px-2 py-0.5 font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+            Last capture {lastCaptureLabel}
+          </span>
+          <span className="text-zinc-500 dark:text-zinc-400">
+            Shortcuts: Alt+Left/Right or [ / ] for prev/next, L live, E email, V viewport
+          </span>
+        </div>
         <div
           className="inline-flex gap-1 rounded-lg border border-zinc-200 bg-zinc-100/80 p-1 dark:border-zinc-700 dark:bg-zinc-900/80"
           role="tablist"
@@ -162,7 +319,7 @@ export default function ReviewClient({
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row lg:items-stretch lg:gap-4">
-        <section className="flex min-h-0 flex-1 flex-col max-lg:min-h-[50vh] lg:h-[calc(100dvh-12rem)] lg:max-h-[calc(100dvh-12rem)]">
+        <section className="flex min-h-0 flex-1 flex-col max-lg:min-h-[50vh] lg:h-[calc(100dvh-8.5rem)] lg:max-h-[calc(100dvh-8.5rem)]">
           <div className="flex h-full min-h-0 flex-1 flex-col">
             {reviewTab === "live" ? (
               <ReviewLiveSplit

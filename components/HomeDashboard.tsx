@@ -15,7 +15,7 @@ export function HomeDashboard({
   siteReview: SiteReviewMap;
 }) {
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-10 px-4 py-12">
+    <main className="mx-auto flex w-full max-w-[1800px] flex-1 flex-col gap-10 px-4 py-12">
       <div className="text-center">
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
           Website comparison

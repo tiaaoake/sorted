@@ -12,7 +12,6 @@ export const EXAMPLE_SITE_PAIRS: ExampleSitePair[] = [
     id: "auckland-electrical-services",
     label: "Auckland Electrical Services",
     currentUrl: "https://www.aucklandelectrical.co.nz/",
-    newUrl: "https://familiar-upgrade.lovable.app",
   },
   {
     id: "ak-electrical",
@@ -24,7 +23,6 @@ export const EXAMPLE_SITE_PAIRS: ExampleSitePair[] = [
     id: "advanced-electrical-services",
     label: "Advanced Electrical Services",
     currentUrl: "https://advancedelectricalservices.co.nz/",
-    newUrl: "https://architect-revive-site.lovable.app",
   },
   {
     id: "sparkyg",
@@ -36,7 +34,7 @@ export const EXAMPLE_SITE_PAIRS: ExampleSitePair[] = [
     id: "fixed-electrical",
     label: "FIXED Electrical",
     currentUrl: "https://www.fixedelectrical.co.nz/",
-    newUrl: "https://sharp-sparkle-redo.lovable.app",
+    newUrl: "https://fixedelectrical.lovable.app",
   },
   {
     id: "smartcity-electrical",
@@ -48,7 +46,7 @@ export const EXAMPLE_SITE_PAIRS: ExampleSitePair[] = [
     id: "eteck-electrical",
     label: "Eteck Electrical",
     currentUrl: "https://eteckelectrical.co.nz/",
-    newUrl: "https://brand-revive-blossom.lovable.app",
+    newUrl: "https://eteckelectrical.lovable.app",
   },
   {
     id: "wisdom-electrical",
@@ -66,8 +64,7 @@ export const EXAMPLE_SITE_PAIRS: ExampleSitePair[] = [
     id: "viper-electrical",
     label: "Viper Electrical",
     currentUrl: "https://www.viperelectrical.co.nz/",
-    newUrl:
-      "https://lovable.dev/projects/e7a91880-f16b-4d07-b929-ed9f351c46a5",
+    newUrl: "https://vipereletrical.lovable.app",
   },
   {
     id: "hall-electrical",
@@ -79,13 +76,13 @@ export const EXAMPLE_SITE_PAIRS: ExampleSitePair[] = [
     id: "hines-electrical",
     label: "Hines Electrical",
     currentUrl: "https://www.hines.co.nz/",
-    newUrl: "https://hines4.lovable.app",
+    newUrl: "https://hineselectrical.lovable.app",
   },
   {
     id: "allbases",
     label: "All Bases Electrical",
     currentUrl: "https://www.allbaseselectrical.co.nz/",
-    newUrl: "https://volt-revamp-central.lovable.app",
+    newUrl: "https://allbaseselectrical.lovable.app",
   },
   {
     id: "shore-electrical",
@@ -97,7 +94,7 @@ export const EXAMPLE_SITE_PAIRS: ExampleSitePair[] = [
     id: "tahi",
     label: "Tahi Electrical",
     currentUrl: "https://www.tahielectrical.co.nz/",
-    newUrl: "https://modern-craft-reboot.lovable.app",
+    newUrl: "https://tahielectrical.lovable.app",
   },
   {
     id: "kc-electrics",
@@ -109,19 +106,31 @@ export const EXAMPLE_SITE_PAIRS: ExampleSitePair[] = [
     id: "volts-electric",
     label: "Volts Electric",
     currentUrl: "https://www.voltselectric.co.nz/",
-    newUrl: "https://brand-preserver-upgrade.lovable.app",
+    newUrl: "https://voltselectric.lovable.app",
   },
   {
     id: "sullivan-plumbing",
     label: "Sullivan Plumbing",
     currentUrl: "https://www.sullivanplumbing.co.nz/",
-    newUrl: "https://brand-sparkle-revive.lovable.app",
+    newUrl: "https://sullivanplumbing.lovable.app/",
   },
   {
     id: "margaritas-cleaning-office-auckland",
     label: "Margarita's Cleaning — office cleaning Auckland",
     currentUrl:
       "https://margaritascleaning.co.nz/office-cleaning-services-auckland/",
+    newUrl: "https://margaritascleaning.lovable.app",
+  },
+  {
+    id: "ak-electrical-refined",
+    label: "AK Electrical (Refined Studio Recreation)",
+    currentUrl: "https://akelectrical.co.nz/",
+  },
+  {
+    id: "slipper-electrical",
+    label: "Slipper Electrical",
+    currentUrl: "https://slipperelectrical.co.nz/",
+    newUrl: "https://slipperelectrical.lovable.app",
   },
   {
     id: "central-clean",
